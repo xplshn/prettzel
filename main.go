@@ -1,39 +1,50 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 )
 
 func main() {
-	if len(os.Args) < 4 {
-		fmt.Println("Usage: prettzel --set \"<symbols>\" <percentage>")
+	// Define the flags
+	setFlag := flag.String("set", "", "Set the symbols for percentage ranges 0-100%")
+	overFlag := flag.String("over", "", "Set the symbols for percentages over 100%")
+	flag.Parse()
+
+	// Validate the usage
+	if *setFlag == "" || flag.NArg() != 1 {
+		fmt.Println("Usage: prettzel --set \"<symbols>\" <--over \"<over_symbols>\"> <percentage>")
 		return
 	}
 
-	// Parse the arguments
-	symbols := os.Args[2]
-	percentageStr := os.Args[3]
-
-	// Clean the symbols input
-	symbols = strings.Trim(symbols, "\"")
-
-	// Convert percentage to a float
+	// Parse the percentage argument
+	percentageStr := flag.Arg(0)
 	percentage, err := strconv.ParseFloat(strings.TrimSuffix(percentageStr, "%"), 64)
 	if err != nil {
 		fmt.Println("Invalid percentage value")
 		return
 	}
 
-	// Split symbols into a slice
-	symbolList := strings.Split(symbols, " ")
-
-	// Determine the index of the symbol based on the percentage
+	// Split the symbols into a slice
+	symbolList := strings.Split(strings.Trim(*setFlag, "\""), " ")
 	numSymbols := len(symbolList)
-	index := int((percentage / 100) * float64(numSymbols-1))
+
+	// Determine the appropriate symbol list
+	var selectedSymbol string
+	if percentage <= 100 {
+		index := int((percentage / 100) * float64(numSymbols-1))
+		selectedSymbol = symbolList[index]
+	} else if *overFlag != "" {
+		overSymbolList := strings.Split(strings.Trim(*overFlag, "\""), " ")
+		numOverSymbols := len(overSymbolList)
+		index := int((percentage / 100) * float64(numOverSymbols-1))
+		selectedSymbol = overSymbolList[index]
+	} else {
+		selectedSymbol = symbolList[numSymbols-1] // Default to the last symbol in the regular list
+	}
 
 	// Print the corresponding symbol
-	fmt.Println(symbolList[index])
+	fmt.Println(selectedSymbol)
 }
